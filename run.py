@@ -13,14 +13,14 @@ TWILIO_AUTH_TOKEN = ''
 SUBSCRIBER_PHONE_NUMBERS = ['']
 
 ## Zip code of the area you are looking for an Xbox. Needed for Target.
-TARGET_ZIP_CODE = '30075'
+TARGET_ZIP_CODE = '' 
 
 
 class FindMeAnXboxX:
 
     def __init__(self):
         chrome_options = webdriver.ChromeOptions()
-        self.driver = webdriver.Chrome(options=chrome_options)
+        self.driver = webdriver.Chrome(options=chrome_options,executable_path="")
 
     def run(self):
         while True:
@@ -58,7 +58,8 @@ class FindMeAnXboxX:
                     self.notify_subscriber(url)
 
     def gamestop(self):
-        url = 'https://www.gamestop.com/video-games/xbox-series-x/consoles/products/xbox-series-x/B224744V.html'
+        # new gamestop link
+        url = 'https://www.gamestop.com/products/microsoft-xbox-series-x/11108371.html?condition=New'
         self.driver.get(url)
         soup = Soup(self.driver.page_source, features='html.parser')
         status = soup.find('button', {'class': 'add-to-cart'}).text.strip()
@@ -85,19 +86,21 @@ class FindMeAnXboxX:
             }).json()
         url = 'https://www.target.com/p/xbox-series-x-console/-/A-80790841'
         out_of_stock_words = ['UNAVAILABLE', 'NOT_SOLD_IN_STORE', 'OUT_OF_STOCK']
-        for location in response['products'][0]['locations']:
-            if location.get('curbside') and location['curbside']['availability_status'] not in out_of_stock_words:
-                status = location['curbside']['availability_status']
-                self.notify_subscriber(url, '%s Curbside, %s' % (status, location['store_address']))
-            if location.get('order_pickup') and location['order_pickup']['availability_status'] not in out_of_stock_words:
-                status = location['order_pickup']['availability_status']
-                self.notify_subscriber(url, '%s Order Pickup, %s' % (status, location['store_address']))
-            if location.get('ship_to_store') and location['ship_to_store']['availability_status'] not in out_of_stock_words:
-                status = location['ship_to_store']['availability_status']
-                self.notify_subscriber(url, '%s Ship to Store, %s' % (status, location['store_address']))
-            if location.get('in_store_only') and location['in_store_only']['availability_status'] not in out_of_stock_words:
-                status = location['in_store_only']['availability_status']
-                self.notify_subscriber(url, '%s In Store Only, %s' % (status, location['store_address']))
+        # added if because Target removes page if not in stock so it would error out otherwise
+        if response['status'] != 'BAD_REQUEST': 
+            for location in response['products'][0]['locations']:
+                if location.get('curbside') and location['curbside']['availability_status'] not in out_of_stock_words:
+                    status = location['curbside']['availability_status']
+                    self.notify_subscriber(url, '%s Curbside, %s' % (status, location['store_address']))
+                if location.get('order_pickup') and location['order_pickup']['availability_status'] not in out_of_stock_words:
+                    status = location['order_pickup']['availability_status']
+                    self.notify_subscriber(url, '%s Order Pickup, %s' % (status, location['store_address']))
+                if location.get('ship_to_store') and location['ship_to_store']['availability_status'] not in out_of_stock_words:
+                    status = location['ship_to_store']['availability_status']
+                    self.notify_subscriber(url, '%s Ship to Store, %s' % (status, location['store_address']))
+                if location.get('in_store_only') and location['in_store_only']['availability_status'] not in out_of_stock_words:
+                    status = location['in_store_only']['availability_status']
+                    self.notify_subscriber(url, '%s In Store Only, %s' % (status, location['store_address']))
 
 
 FindMeAnXboxX().run()
